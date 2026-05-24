@@ -2,16 +2,18 @@
 
 ## Quick start (fresh deploy)
 
-```sh
-# 1. On the Linux build machine, from project root:
-sh docker/pack.sh                          # builds frontend + packs app.tar.gz
+```bat
+REM 1. On your Windows dev machine, from project root — build + sync into docker\:
+sync-docker.bat
+```
 
-# 2. Copy docker/ folder to target host:
+```sh
+# 2. Copy the docker/ folder to the target Linux host:
 scp -r docker/ user@host:/opt/mapm/
 
-# 3. On the target host:
+# 3. On the host:
 cd /opt/mapm
-cp .env.example .env && nano .env          # set credentials + port (optional)
+cp .env.example .env && nano .env     # set credentials + port (optional)
 docker compose up --build -d
 ```
 
@@ -21,12 +23,14 @@ App is live at `http://host:3001` (or the PORT you set).
 
 ## Re-deploy after code changes
 
-```sh
-# Build machine:
-sh docker/pack.sh
-scp docker/app.tar.gz user@host:/opt/mapm/
+```bat
+REM Dev machine:
+sync-docker.bat
+```
 
-# Target host:
+```sh
+# Then:
+scp -r docker/ user@host:/opt/mapm/
 cd /opt/mapm && docker compose up --build -d
 ```
 
@@ -63,12 +67,13 @@ If `.env` is absent, defaults from `config.js` apply.
 
 | File | Purpose |
 |---|---|
-| `pack.sh` | Build + pack script (run on Linux build machine) |
-| `Dockerfile` | Container image — just extracts app.tar.gz, no build step |
+| `sync-docker.bat` | *(project root)* Build frontend + sync app files into this folder |
+| `Dockerfile` | Simple image build — installs prod deps, copies pre-built files |
 | `docker-compose.yml` | Ports, volume mount, env wiring |
 | `.env.example` | Config template |
-| `Dockerfile.dockerignore` | BuildKit ignore rules |
-| `app.tar.gz` | *(generated)* Packed app — not in repo |
+| `server.js` / `config.js` | *(synced by sync.sh)* |
+| `dist/` | *(synced by sync.sh)* Built React frontend |
+| `package*.json` | *(synced by sync.sh)* |
 
 ---
 

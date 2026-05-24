@@ -1,16 +1,27 @@
 services:
-  app:
-    build:
-      context: .                     # docker/ folder — only needs Dockerfile + app.tar.gz
-      dockerfile: Dockerfile
-    image: mapm-ar:latest
+  mapm-ar:
+    build: .
+    image: ar-mapm:latest
+    container_name: ar_mapm
+    restart: unless-stopped
+
     ports:
       - "${PORT:-3001}:3001"
+
+    volumes:
+      - ./data:/app/data          # database persists in data/ next to this file
+
     env_file:
       - path: .env
-        required: false              # works without .env; defaults from config.js apply
+        required: false
+
     environment:
       - DB_PATH=/app/data/mapm.db
-    volumes:
-      - ./data:/app/data            # database persists in data/ next to this file
-    restart: unless-stopped
+      - NODE_ENV=production
+      - TZ=Asia/Bangkok
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
