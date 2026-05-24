@@ -17,6 +17,7 @@ import { PMPanel } from './components/panels/PMPanel.jsx'
 import { PartsPanel } from './components/panels/PartsPanel.jsx'
 import { RuntimePanel } from './components/panels/RuntimePanel.jsx'
 import { testBackend } from './api/backend.js'
+import { DEMO } from './data/demoData.js'
 
 export default function App() {
   if (new URLSearchParams(location.search).has('admin'))    return <AdminGate><AdminScreen /></AdminGate>
@@ -26,6 +27,7 @@ export default function App() {
 
   const [screen, setScreen]           = useState('landing')
   const [machineId, setMachineId]     = useState(null)
+  const [demoData, setDemoData]       = useState(null)
   const [activePanel, setActivePanel] = useState(null)
   const [loadMsg, setLoadMsg]         = useState('')
   const [menuOpen, setMenuOpen]       = useState(false)
@@ -33,7 +35,8 @@ export default function App() {
   const [scanning, setScanning]       = useState(false)
 
   const { videoRef, startCamera, cameraActive, error: camError } = useCamera()
-  const { data, loading } = useMachineData(machineId)
+  const { data: liveData, loading } = useMachineData(demoData ? null : machineId)
+  const data = demoData || liveData
   const { showToast, ToastComponent } = useToast()
 
   useQRScanner(videoRef, handleQRResult, scanning)
@@ -79,9 +82,19 @@ export default function App() {
   }
 
   function handleLoadMachine(id) {
+    setDemoData(null)
     setMachineId(id)
     setLoadMsg(`Loading machine data... (${id})`)
     setScreen('loading')
+  }
+
+  async function handleLoadDemo(id) {
+    setDemoData(null)
+    setLoadMsg('Loading demo...')
+    setScreen('loading')
+    await new Promise(r => setTimeout(r, 600))
+    setDemoData(DEMO[id] || DEMO['MCH-001'])
+    setMachineId(id)
   }
 
   function openPanel(name) {
@@ -118,7 +131,7 @@ export default function App() {
       />
 
       {screen === 'landing' && (
-        <LandingScreen onStartCamera={handleStartCamera} onLoadDemo={handleLoadMachine} />
+        <LandingScreen onStartCamera={handleStartCamera} onLoadDemo={handleLoadDemo} />
       )}
 
       {screen === 'loading' && (
@@ -226,7 +239,7 @@ export default function App() {
                 />
               ))}
               <button
-                onClick={() => { setMenuOpen(false); setScreen('landing'); setMachineId(null) }}
+                onClick={() => { setMenuOpen(false); setScreen('landing'); setMachineId(null); setDemoData(null) }}
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.04)',
                   border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: '7px',
