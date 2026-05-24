@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+docker/*.tar
+docker/*.tar.gz
+.env
+.env.local
+*.db
+*.db-shm
+*.db-wal

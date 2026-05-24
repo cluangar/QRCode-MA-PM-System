@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+docker
+*.db
+*.db-wal
+*.db-shm
+*.tar
+.env
+.env.local

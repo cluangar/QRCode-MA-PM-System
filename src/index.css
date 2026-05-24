@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@300;400;500&display=swap');
+
+:root {
+  --green: #00ff9d;
+  --green-dim: rgba(0,255,157,0.15);
+  --green-border: rgba(0,255,157,0.35);
+  --amber: #ffb020;
+  --amber-dim: rgba(255,176,32,0.15);
+  --red: #ff4444;
+  --red-dim: rgba(255,68,68,0.15);
+  --blue: #38bdf8;
+  --blue-dim: rgba(56,189,248,0.12);
+  --bg: #060a0f;
+  --panel: rgba(6,14,22,0.94);
+  --border: rgba(0,255,157,0.2);
+  --text: #c8e8d8;
+  --text-dim: rgba(180,220,200,0.5);
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans Thai', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  font-family: var(--sans);
+  color: var(--text);
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
+#root {
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scanline {
+  0%   { top: 0; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes qrscan {
+  0%, 100% { top: 0; }
+  50% { top: calc(100% - 2px); }
+}

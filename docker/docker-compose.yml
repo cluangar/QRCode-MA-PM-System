@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: .                     # docker/ folder — only needs Dockerfile + app.tar.gz
+      dockerfile: Dockerfile
+    image: mapm-ar:latest
+    ports:
+      - "${PORT:-3001}:3001"
+    env_file:
+      - path: .env
+        required: false              # works without .env; defaults from config.js apply
+    environment:
+      - DB_PATH=/app/data/mapm.db
+    volumes:
+      - ./data:/app/data            # database persists in data/ next to this file
+    restart: unless-stopped
