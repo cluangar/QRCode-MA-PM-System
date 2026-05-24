@@ -293,9 +293,17 @@ export function MachinesScreen() {
   const [toast,       setToast]       = useState('')
   const [selectMode,  setSelectMode]  = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
+  const [search,      setSearch]      = useState('')
 
   const load = () => api.machines().then(setMachines).catch(() => setMachines([]))
   useEffect(() => { load() }, [])
+
+  const filtered = machines.filter(m => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (m.id + ' ' + m.name + ' ' + (m.location || '') + ' ' + (m.model || '') + ' ' + m.status)
+      .toLowerCase().includes(q)
+  })
 
   function showToast(msg) {
     setToast(msg)
@@ -327,6 +335,16 @@ export function MachinesScreen() {
     window.location.href = '/?print&ids=' + [...selectedIds].join(',')
   }
 
+  async function deleteSelected() {
+    if (selectedIds.size === 0) return
+    if (!confirm(`Delete ${selectedIds.size} machine${selectedIds.size !== 1 ? 's' : ''} and all their data?`)) return
+    for (const id of selectedIds) await api.deleteMachine(id)
+    showToast(`${selectedIds.size} machine${selectedIds.size !== 1 ? 's' : ''} deleted`)
+    setSelectMode(false)
+    setSelectedIds(new Set())
+    load()
+  }
+
   return (
     <div style={s.page}>
       {/* Header */}
@@ -338,20 +356,39 @@ export function MachinesScreen() {
             style={{ ...s.btn, ...(selectMode ? s.green : s.dim) }}
             onClick={toggleSelectMode}
           >
-            {selectMode ? '✕ Cancel' : 'Print QR'}
+            {selectMode ? '✕ Cancel' : 'Select'}
           </button>
           {!selectMode && <a href="/?admin" style={{ ...s.btn, ...s.dim, textDecoration:'none', display:'flex', alignItems:'center' }}>← Admin</a>}
         </div>
       </div>
 
+      {/* Search bar */}
+      <div style={{ padding:'12px 20px 0' }}>
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by name, ID, location, model, status…"
+          style={{ ...s.input, marginBottom:0, paddingLeft:'34px',
+            backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")`,
+            backgroundRepeat:'no-repeat', backgroundPosition:'10px center',
+          }}
+        />
+      </div>
+
       {/* Machine list */}
-      <div style={{ padding:'16px 20px' }}>
+      <div style={{ padding:'12px 20px', paddingBottom: selectMode ? '80px' : '16px' }}>
         {machines.length === 0 && (
           <div style={{ textAlign:'center', color:'#4a5568', padding:'40px 0', fontSize:'13px' }}>
             No machines yet — click + Add Machine to create one
           </div>
         )}
-        {machines.map(m => {
+        {machines.length > 0 && filtered.length === 0 && (
+          <div style={{ textAlign:'center', color:'#4a5568', padding:'40px 0', fontSize:'13px' }}>
+            No machines match "{search}"
+          </div>
+        )}
+        {filtered.map(m => {
           const checked = selectedIds.has(m.id)
           return (
             <div key={m.id} style={{ ...s.card, outline: checked ? '1px solid rgba(0,255,157,0.4)' : 'none' }}
@@ -389,18 +426,25 @@ export function MachinesScreen() {
         <div style={{
           position:'fixed', bottom:0, left:0, right:0,
           background:'#0d1117', borderTop:'1px solid rgba(255,255,255,0.1)',
-          padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'12px 20px', display:'flex', alignItems:'center', gap:'10px',
           zIndex:150,
         }}>
-          <span style={{ fontSize:'12px', color:'#888', fontFamily:'IBM Plex Mono, monospace' }}>
-            {selectedIds.size} machine{selectedIds.size !== 1 ? 's' : ''} selected
+          <span style={{ fontSize:'12px', color:'#888', fontFamily:'IBM Plex Mono, monospace', flex:1 }}>
+            {selectedIds.size} selected
           </span>
           <button
             style={{ ...s.btn, ...s.green, opacity: selectedIds.size === 0 ? 0.4 : 1 }}
             disabled={selectedIds.size === 0}
             onClick={printSelected}
           >
-            Print QR Labels →
+            Print QR →
+          </button>
+          <button
+            style={{ ...s.btn, ...s.danger, opacity: selectedIds.size === 0 ? 0.4 : 1 }}
+            disabled={selectedIds.size === 0}
+            onClick={deleteSelected}
+          >
+            Delete →
           </button>
         </div>
       )}
