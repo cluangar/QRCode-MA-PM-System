@@ -4,6 +4,12 @@ A Progressive Web App for factory maintenance teams. Workers scan a QR code labe
 
 ---
 
+## Demo
+
+[![Watch demo on YouTube](https://img.youtube.com/vi/ybfLdCIl2-c/hqdefault.jpg)](https://www.youtube.com/shorts/ybfLdCIl2-c)
+
+---
+
 ## Screenshots
 
 ![Landing Screen](screenshots/landing-screen.png)
@@ -90,13 +96,13 @@ DEMO_SEED=true
 
 ## Docker Deploy
 
-Run on a Linux machine:
+```bat
+REM 1. On Windows — build frontend + sync into docker/
+sync-docker.bat
+```
 
 ```sh
-# 1. Pack the app (from project root)
-sh docker/pack.sh
-
-# 2. Copy docker/ folder to target host
+# 2. Copy docker/ folder to target Linux host
 scp -r docker/ user@host:/opt/mapm/
 
 # 3. Start on target host
