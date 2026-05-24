@@ -310,8 +310,8 @@ function DBSection() {
   async function doReset() {
     setBusy('reset'); setMsg({ text: '', ok: true })
     try {
-      const r = await fetch('/api/db/reset', { method: 'POST' }).then(r => r.json())
-      setMsg({ text: r.seeded ? 'Database reset — demo data restored' : 'Database cleared', ok: true })
+      await fetch('/api/db/reset', { method: 'POST' })
+      setMsg({ text: 'Database cleared', ok: true })
       loadStats()
     } catch { setMsg({ text: 'Reset failed', ok: false }) }
     setResetConfirm(false); setBusy('')
@@ -398,7 +398,7 @@ function DBSection() {
           </div>
           <div style={{ fontSize: '12px', color: T, lineHeight: 1.6, marginBottom: '12px' }}>
             This will permanently delete <span style={{ color: R, fontWeight: 600 }}>all machines, work orders, PM schedules, and parts</span>.
-            {' '}Demo data (MCH-001 / 002 / 003) will be re-seeded if <span style={{ color: A, fontFamily: MONO }}>DEMO_SEED=true</span>.
+            {' '}Demo mode will be disabled on the landing screen.
             <br />
             <span style={{ color: R }}>This action cannot be undone.</span>
           </div>

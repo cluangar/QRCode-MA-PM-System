@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const MACHINES = [
   { value: 'MCH-001', label: 'CNC Lathe #3 — Line B (Fault)' },
@@ -8,6 +8,14 @@ const MACHINES = [
 
 export function LandingScreen({ onStartCamera, onLoadDemo }) {
   const [selected, setSelected] = useState('MCH-001')
+  const [showDemo, setShowDemo] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/machines')
+      .then(r => r.json())
+      .then(list => setShowDemo(list.length > 0))
+      .catch(() => setShowDemo(true))
+  }, [])
 
   return (
     <div style={{
@@ -70,34 +78,36 @@ export function LandingScreen({ onStartCamera, onLoadDemo }) {
         &#x1F4F7; Scan QR / Start Camera
       </button>
 
-      <div style={{ width: '100%', marginTop: '10px' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '.08em', marginBottom: '8px', textAlign: 'left' }}>
-          — OR DEMO MODE —
+      {showDemo && (
+        <div style={{ width: '100%', marginTop: '10px' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '.08em', marginBottom: '8px', textAlign: 'left' }}>
+            — OR DEMO MODE —
+          </div>
+          <select
+            value={selected}
+            onChange={e => setSelected(e.target.value)}
+            style={{
+              width: '100%', background: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--green-border)', borderRadius: '10px',
+              color: 'var(--green)', fontFamily: 'var(--mono)', fontSize: '13px',
+              padding: '12px 14px', marginBottom: '10px', outline: 'none', appearance: 'none',
+            }}
+          >
+            {MACHINES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          <button
+            onClick={() => onLoadDemo(selected)}
+            style={{
+              width: '100%', background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
+              color: 'var(--text-dim)', fontFamily: 'var(--mono)', fontSize: '12px',
+              padding: '11px', cursor: 'pointer',
+            }}
+          >
+            Load Demo Machine
+          </button>
         </div>
-        <select
-          value={selected}
-          onChange={e => setSelected(e.target.value)}
-          style={{
-            width: '100%', background: 'rgba(255,255,255,0.05)',
-            border: '1px solid var(--green-border)', borderRadius: '10px',
-            color: 'var(--green)', fontFamily: 'var(--mono)', fontSize: '13px',
-            padding: '12px 14px', marginBottom: '10px', outline: 'none', appearance: 'none',
-          }}
-        >
-          {MACHINES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
-        <button
-          onClick={() => onLoadDemo(selected)}
-          style={{
-            width: '100%', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px',
-            color: 'var(--text-dim)', fontFamily: 'var(--mono)', fontSize: '12px',
-            padding: '11px', cursor: 'pointer',
-          }}
-        >
-          Load Demo Machine
-        </button>
-      </div>
+      )}
     </div>
   )
 }
