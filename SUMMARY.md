@@ -76,6 +76,7 @@ The AR overlay shows 5 tap zones on the machine silhouette:
 - **Nav cards** — quick links to Machines / Print QR / Reports with alert badges
 - **Alerts panel** — red/amber list of fault machines, overdue PMs, high-priority WOs, low-stock parts
 - **Machine list** — all machines with status dot, WO/PM/stock tags, runtime hours
+- **Database Maintenance** — VACUUM, purge completed WOs, download backup, restore backup, and **Reset Database** (clears all data; no re-seed; demo mode hidden after reset)
 
 ---
 
@@ -86,7 +87,11 @@ Full CRUD for machines. Tap a card to open the edit drawer. Each machine has thr
 - **PM Schedule** — frequency, last/next dates, status, task list
 - **Parts** — spare parts with inline qty editing, add/delete
 
-**Print QR selection mode** — tap **Print QR** in the header to toggle selection mode. Cards show checkboxes; tapping toggles selection. A bottom action bar shows the count and navigates to `/?print&ids=...` with the selected IDs.
+**Search bar** — always visible below the header; filters the machine list live by name, ID, location, model, or status. Shows "No machines match…" when the filter returns nothing.
+
+**Select mode** — tap **Select** in the header to toggle selection mode. Cards show checkboxes; tapping toggles each machine. A fixed bottom action bar shows the selected count and two buttons:
+- **Print QR →** — navigates to `/?print&ids=MCH-001,MCH-003` with the selected IDs
+- **Delete →** — confirms with a dialog, deletes all selected machines and their related data (WOs, PM, parts) via sequential API calls, then exits select mode with a toast
 
 ---
 
@@ -101,7 +106,7 @@ Click **Print Labels** to send both sections to the printer.
 
 ### Selective printing from Machine Management
 
-On the Machine Management page (`/?machines`), tap **Print QR** in the header to enter selection mode. Tap machine cards to toggle a green checkbox. A bottom action bar shows the count and a **Print QR Labels →** button that navigates to `/?print&ids=MCH-001,MCH-003`.
+On the Machine Management page (`/?machines`), tap **Select** in the header to enter selection mode. Tap machine cards to toggle a green checkbox. The bottom action bar **Print QR →** button navigates to `/?print&ids=MCH-001,MCH-003`.
 
 When `ids` is present in the URL, `PrintQRScreen` filters the machine list to only those IDs and shows a "N machines selected" message instead of the full instructions. No `ids` param = all machines shown.
 
@@ -233,6 +238,12 @@ ar-mapm/
 | PATCH | `/api/parts/:id` | Update part (e.g. qty) |
 | DELETE | `/api/parts/:id` | Delete part |
 | GET | `/api/report` | All data joined for export |
+| GET | `/api/db/stats` | DB file sizes + row counts per table |
+| GET | `/api/db/backup` | Download raw SQLite file |
+| POST | `/api/db/restore` | Upload SQLite file to replace DB |
+| POST | `/api/db/reset` | Delete all rows (no re-seed); sets `demo_seeded` flag |
+| POST | `/api/db/vacuum` | VACUUM + WAL checkpoint |
+| POST | `/api/db/purge` | Delete completed work orders (optional age filter) |
 
 ---
 
@@ -249,9 +260,11 @@ pm_schedules   (id, machine_id, frequency, last_pm_date,
                 next_due_date, status, tasks)
 
 spare_parts    (id, machine_id, name, qty_in_stock, reorder_level, unit)
+
+settings       (key, value)   -- internal flags, e.g. demo_seeded
 ```
 
-Demo data (MCH-001, MCH-002, MCH-003) is seeded automatically on first run.
+Demo data (MCH-001, MCH-002, MCH-003) is seeded on **first run only**. A `demo_seeded` flag in the `settings` table prevents re-seeding on subsequent restarts. After a Reset Database (`POST /api/db/reset`), the flag is preserved so demo data is never restored and demo mode is hidden on the landing screen.
 
 ---
 
@@ -262,3 +275,5 @@ Demo data (MCH-001, MCH-002, MCH-003) is seeded automatically on first run.
 | MCH-001 | CNC Lathe #3 | Line B Bay 4 | Fault |
 | MCH-002 | Hydraulic Press #1 | Line A Bay 1 | Running |
 | MCH-003 | Conveyor Belt #7 | Line C | Idle |
+
+Seeded on first run only. The **Load Demo Machine** section on the landing screen is visible only when machines exist in the database — it is hidden after a Reset Database.

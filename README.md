@@ -14,7 +14,7 @@ A Progressive Web App for factory maintenance teams. Workers scan a QR code labe
 
 - **AR Inspector** — scan a machine QR code → live overlay with 5 data zones
 - **Admin Dashboard** — stats bar, alerts panel, machine list with color-coded status
-- **Machine Management** — full CRUD with Info / PM Schedule / Parts tabs
+- **Machine Management** — full CRUD with Info / PM Schedule / Parts tabs; search bar; multi-select to Print QR or bulk delete
 - **Print QR Labels** — print the web app URL QR + individual machine labels; select specific machines from the machine list
 - **Reports & CSV Export** — machines, work orders, PM schedules, parts; UTF-8 BOM for Excel
 - **Server-side auth** — credentials stored in `.env`, validated via API (not in JS bundle)
@@ -115,4 +115,4 @@ See [docker/README.md](docker/README.md) for the full deploy and re-deploy guide
 | MCH-002 | Hydraulic Press #1 | Line A Bay 1 | Running |
 | MCH-003 | Conveyor Belt #7 | Line C | Idle |
 
-Demo data is seeded automatically on first run (`DEMO_SEED=true`).
+Demo data is seeded automatically on **first run** only (`DEMO_SEED=true`). After a Reset Database, the demo data is **not** re-seeded and demo mode is hidden on the landing screen.
