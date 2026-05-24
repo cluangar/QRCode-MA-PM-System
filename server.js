@@ -294,6 +294,50 @@ app.get('/api/db/backup', (_req, res) => {
   res.download(DB_PATH, filename)
 })
 
+app.post('/api/db/reset', (_req, res) => {
+  db.exec(`
+    DELETE FROM spare_parts;
+    DELETE FROM pm_schedules;
+    DELETE FROM workorders;
+    DELETE FROM machines;
+  `)
+  if (config.demoSeed) {
+    db.prepare(`INSERT INTO machines VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
+      'MCH-001','CNC Lathe #3','Line B Bay 4','Mazak QT-350','SN-20230841','Fault',4821,5000,6.5,142)
+    db.prepare(`INSERT INTO machines VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
+      'MCH-002','Hydraulic Press #1','Line A Bay 1','Schuler MSE 160','SN-20190032','Running',2310,3000,7.2,168)
+    db.prepare(`INSERT INTO machines VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
+      'MCH-003','Conveyor Belt #7','Line C','Hytrol E24','SN-20211107','Idle',980,2000,0,42)
+    db.prepare(`INSERT INTO workorders VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`).run(
+      'WO-2024-0891','MCH-001','Corrective','High','Open','Somchai K.','2024-06-15',
+      'Spindle vibration detected at 2800 RPM — bearing noise','')
+    db.prepare(`INSERT INTO workorders VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))`).run(
+      'WO-2024-0887','MCH-002','Preventive','Medium','In Progress','Napat W.','2024-06-20',
+      'Scheduled 500-hr hydraulic fluid change','Drained old fluid. Waiting for new oil delivery.')
+    db.prepare(`INSERT INTO pm_schedules (machine_id,frequency,last_pm_date,next_due_date,status,tasks) VALUES (?,?,?,?,?,?)`).run(
+      'MCH-001','Every 500 hrs','2024-04-10','2024-06-15','Overdue',
+      'Inspect spindle bearings\nCheck coolant level\nLubricate guide rails\nCalibrate tool offset')
+    db.prepare(`INSERT INTO pm_schedules (machine_id,frequency,last_pm_date,next_due_date,status,tasks) VALUES (?,?,?,?,?,?)`).run(
+      'MCH-002','Every 500 hrs','2024-05-01','2024-07-01','Scheduled',
+      'Change hydraulic fluid\nCheck seals and hoses\nTest pressure relief valve')
+    db.prepare(`INSERT INTO pm_schedules (machine_id,frequency,last_pm_date,next_due_date,status,tasks) VALUES (?,?,?,?,?,?)`).run(
+      'MCH-003','Monthly','2024-05-15','2024-06-15','Scheduled',
+      'Inspect belt tension\nClean drive rollers\nCheck motor mounts')
+    const parts = [
+      ['PT-001','MCH-001','Spindle Bearing 6205',2,3,'pcs'],
+      ['PT-002','MCH-001','Coolant Filter',5,10,'pcs'],
+      ['PT-003','MCH-001','Guide Rail Lubricant',1,2,'litre'],
+      ['PT-004','MCH-002','Hydraulic Fluid ISO 46',3,4,'litre'],
+      ['PT-005','MCH-002','Hydraulic Seal Kit',1,2,'set'],
+      ['PT-006','MCH-003','Drive Belt B-78',4,5,'pcs'],
+      ['PT-007','MCH-003','Roller Bearing 6004',2,3,'pcs'],
+    ]
+    const ins = db.prepare('INSERT INTO spare_parts VALUES (?,?,?,?,?,?)')
+    parts.forEach(p => ins.run(...p))
+  }
+  res.json({ ok: true, seeded: config.demoSeed })
+})
+
 app.post('/api/db/restore',
   express.raw({ type: 'application/octet-stream', limit: '100mb' }),
   (req, res) => {

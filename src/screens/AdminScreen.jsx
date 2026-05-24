@@ -275,6 +275,7 @@ function DBSection() {
   const [days,         setDays]         = useState('0')
   const [restoreFile,    setRestoreFile]    = useState(null)
   const [restoreConfirm, setRestoreConfirm] = useState(false)
+  const [resetConfirm,   setResetConfirm]   = useState(false)
   const fileInputRef = useRef(null)
 
   function loadStats() {
@@ -304,6 +305,16 @@ function DBSection() {
       loadStats()
     } catch { setMsg({ text: 'Purge failed', ok: false }) }
     setConfirm(false); setBusy('')
+  }
+
+  async function doReset() {
+    setBusy('reset'); setMsg({ text: '', ok: true })
+    try {
+      const r = await fetch('/api/db/reset', { method: 'POST' }).then(r => r.json())
+      setMsg({ text: r.seeded ? 'Database reset — demo data restored' : 'Database cleared', ok: true })
+      loadStats()
+    } catch { setMsg({ text: 'Reset failed', ok: false }) }
+    setResetConfirm(false); setBusy('')
   }
 
   async function doRestore() {
@@ -350,7 +361,7 @@ function DBSection() {
       />
 
       {/* Action buttons */}
-      {!confirm && !restoreConfirm ? (
+      {!confirm && !restoreConfirm && !resetConfirm ? (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button style={btn('dim')} onClick={vacuum} disabled={!!busy}>
             {busy === 'vacuum' ? '…' : '⚡ VACUUM & Compact'}
@@ -369,6 +380,37 @@ function DBSection() {
           <button style={btn('dim')} onClick={() => fileInputRef.current?.click()} disabled={!!busy}>
             &#x1F504; Restore Backup
           </button>
+          <button
+            style={{ ...btn('dim'), color: R, borderColor: R + '55' }}
+            onClick={() => setResetConfirm(true)}
+            disabled={!!busy}
+          >
+            &#x26A0; Reset Database
+          </button>
+        </div>
+      ) : resetConfirm ? (
+        <div style={{
+          background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.35)',
+          borderRadius: '10px', padding: '14px 16px',
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: R, fontFamily: MONO, marginBottom: '6px' }}>
+            &#x26A0; Reset entire database?
+          </div>
+          <div style={{ fontSize: '12px', color: T, lineHeight: 1.6, marginBottom: '12px' }}>
+            This will permanently delete <span style={{ color: R, fontWeight: 600 }}>all machines, work orders, PM schedules, and parts</span>.
+            {' '}Demo data (MCH-001 / 002 / 003) will be re-seeded if <span style={{ color: A, fontFamily: MONO }}>DEMO_SEED=true</span>.
+            <br />
+            <span style={{ color: R }}>This action cannot be undone.</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              style={{ ...btn('dim'), background: 'rgba(255,71,87,0.15)', border: '1px solid rgba(255,71,87,0.5)', color: R }}
+              onClick={doReset} disabled={busy === 'reset'}
+            >
+              {busy === 'reset' ? 'Resetting…' : '&#x26A0; Yes, Reset Everything'}
+            </button>
+            <button style={btn('dim')} onClick={() => setResetConfirm(false)}>Cancel</button>
+          </div>
         </div>
       ) : restoreConfirm ? (
         <div style={{
