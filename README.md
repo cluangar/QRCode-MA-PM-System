@@ -4,6 +4,12 @@ A Progressive Web App for factory maintenance teams. Workers scan a QR code labe
 
 ---
 
+## Screenshots
+
+![Landing Screen](screenshots/landing-screen.png)
+
+---
+
 ## Features
 
 - **AR Inspector** — scan a machine QR code → live overlay with 5 data zones
