@@ -9,6 +9,7 @@ import { PrintQRScreen } from './screens/PrintQRScreen.jsx'
 import { MachinesScreen } from './screens/MachinesScreen.jsx'
 import { ReportsScreen } from './screens/ReportsScreen.jsx'
 import { AdminScreen } from './screens/AdminScreen.jsx'
+import { MQTTScreen } from './screens/MQTTScreen.jsx'
 import { AdminGate } from './components/AdminGate.jsx'
 import { AROverlay } from './components/AROverlay.jsx'
 import { StatusPanel } from './components/panels/StatusPanel.jsx'
@@ -24,6 +25,7 @@ export default function App() {
   if (new URLSearchParams(location.search).has('print'))    return <AdminGate><PrintQRScreen /></AdminGate>
   if (new URLSearchParams(location.search).has('machines')) return <AdminGate><MachinesScreen /></AdminGate>
   if (new URLSearchParams(location.search).has('reports'))  return <AdminGate><ReportsScreen /></AdminGate>
+  if (new URLSearchParams(location.search).has('mqtt'))     return <AdminGate><MQTTScreen /></AdminGate>
 
   const [screen, setScreen]           = useState('landing')
   const [machineId, setMachineId]     = useState(null)
@@ -227,6 +229,7 @@ export default function App() {
                 { label: '&#x2699; Manage Machines',    href: '/?machines' },
                 { label: '&#x1F4CA; Reports / Export',  href: '/?reports' },
                 { label: '&#x1F5A8; Print QR Labels',   href: '/?print' },
+                { label: '&#x1F4E1; MQTT Mapping',      href: '/?mqtt' },
               ].map(({ label, href }) => (
                 <a key={href} href={href}
                   style={{

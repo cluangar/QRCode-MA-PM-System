@@ -1,5 +1,6 @@
 import express from 'express'
 import Database from 'better-sqlite3'
+import mqtt from 'mqtt'
 import { fileURLToPath } from 'url'
 import { dirname, join, resolve } from 'path'
 import { statSync, writeFileSync, existsSync, mkdirSync } from 'fs'
@@ -59,6 +60,14 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT
   );
+  CREATE TABLE IF NOT EXISTS mqtt_mappings (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic      TEXT NOT NULL,
+    machine_id TEXT NOT NULL,
+    field      TEXT NOT NULL,
+    json_key   TEXT,
+    value_map  TEXT
+  );
 `)
 
 // Seed demo data only on true first run (never after a reset)
@@ -103,6 +112,67 @@ if (config.demoSeed && empty && !alreadySeeded) {
   db.prepare("INSERT OR REPLACE INTO settings VALUES ('demo_seeded', '1')").run()
   console.log('Demo data seeded.')
 }
+
+// ── MQTT manager ─────────────────────────────────────────────────────────────
+const MQTT_FIELDS = ['status', 'runtime_hours', 'today_hours', 'month_hours', 'pm_trigger_hours']
+let mqttClient = null
+let mqttState  = { state: 'disconnected', error: '' }
+
+function getMqttCfg() {
+  const row = db.prepare("SELECT value FROM settings WHERE key='mqtt_config'").get()
+  return row ? JSON.parse(row.value) : null
+}
+
+function applyMqttValue(payload, jsonKey, valueMap) {
+  let v = payload.toString().trim()
+  if (jsonKey) {
+    try { v = String(JSON.parse(payload)?.[jsonKey] ?? v) } catch {}
+  }
+  if (valueMap) {
+    const map = Object.fromEntries(
+      valueMap.split(',').map(p => { const [k, ...rest] = p.trim().split('='); return [k, rest.join('=')] })
+    )
+    if (map[v] !== undefined) v = map[v]
+  }
+  return v
+}
+
+function connectMqtt(cfg) {
+  if (mqttClient) { mqttClient.end(true); mqttClient = null }
+  if (!cfg?.host) return
+  mqttState = { state: 'connecting', error: '' }
+  const url = `${cfg.protocol || 'mqtt'}://${cfg.host}:${cfg.port || 1883}`
+  mqttClient = mqtt.connect(url, {
+    username: cfg.username || undefined,
+    password: cfg.password || undefined,
+    clientId: cfg.clientId || `mapm-${Math.random().toString(36).slice(2, 8)}`,
+    connectTimeout: 8000,
+    reconnectPeriod: 10000,
+  })
+  mqttClient.on('connect', () => {
+    mqttState = { state: 'connected', error: '' }
+    const topics = db.prepare('SELECT DISTINCT topic FROM mqtt_mappings').all().map(r => r.topic)
+    if (topics.length) mqttClient.subscribe(topics)
+  })
+  mqttClient.on('error',   err  => { mqttState = { state: 'error', error: err.message } })
+  mqttClient.on('offline', ()   => { mqttState = { state: 'disconnected', error: '' } })
+  mqttClient.on('message', (topic, payload) => {
+    const maps = db.prepare('SELECT * FROM mqtt_mappings WHERE topic=?').all(topic)
+    for (const m of maps) {
+      if (!MQTT_FIELDS.includes(m.field)) continue
+      const val = applyMqttValue(payload, m.json_key, m.value_map)
+      const numFields = ['runtime_hours', 'today_hours', 'month_hours', 'pm_trigger_hours']
+      db.prepare(`UPDATE machines SET ${m.field}=? WHERE id=?`)
+        .run(numFields.includes(m.field) ? (Number(val) || 0) : val, m.machine_id)
+    }
+  })
+}
+
+// Auto-connect if config saved
+const savedMqttCfg = getMqttCfg()
+if (savedMqttCfg?.host) connectMqtt(savedMqttCfg)
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const app = express()
 app.use(express.json())
@@ -344,6 +414,44 @@ app.get('/api/report', (_req, res) => {
     'SELECT s.*, m.name as machine_name FROM spare_parts s LEFT JOIN machines m ON s.machine_id = m.id ORDER BY s.machine_id, s.id'
   ).all()
   res.json({ machines, workorders, pm, parts })
+})
+
+// --- MQTT ---
+app.get('/api/mqtt/status', (_req, res) => res.json(mqttState))
+
+app.get('/api/mqtt/config', (_req, res) => res.json(getMqttCfg() || {}))
+
+app.post('/api/mqtt/config', (req, res) => {
+  const cfg = req.body
+  db.prepare("INSERT OR REPLACE INTO settings VALUES ('mqtt_config', ?)").run(JSON.stringify(cfg))
+  connectMqtt(cfg)
+  res.json({ ok: true })
+})
+
+app.post('/api/mqtt/disconnect', (_req, res) => {
+  if (mqttClient) { mqttClient.end(true); mqttClient = null }
+  mqttState = { state: 'disconnected', error: '' }
+  res.json({ ok: true })
+})
+
+app.get('/api/mqtt/mappings', (_req, res) => {
+  res.json(db.prepare('SELECT * FROM mqtt_mappings ORDER BY id').all())
+})
+
+app.post('/api/mqtt/mapping', (req, res) => {
+  const { topic, machine_id, field, json_key, value_map } = req.body
+  if (!topic || !machine_id || !field) return res.status(400).json({ error: 'topic, machine_id, field required' })
+  if (!MQTT_FIELDS.includes(field)) return res.status(400).json({ error: 'Invalid field' })
+  const r = db.prepare(
+    'INSERT INTO mqtt_mappings (topic, machine_id, field, json_key, value_map) VALUES (?,?,?,?,?)'
+  ).run(topic, machine_id, field, json_key || null, value_map || null)
+  if (mqttClient?.connected) mqttClient.subscribe(topic)
+  res.json({ id: r.lastInsertRowid })
+})
+
+app.delete('/api/mqtt/mapping/:id', (req, res) => {
+  db.prepare('DELETE FROM mqtt_mappings WHERE id=?').run(req.params.id)
+  res.json({ ok: true })
 })
 
 // --- Health check ---

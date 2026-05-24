@@ -156,6 +156,7 @@ export function AdminScreen() {
           <NavCard icon="&#x2699;"  title="Machines"   desc="Add · Edit · Delete · PM · Parts" href="/?machines" badge={stats.fault} />
           <NavCard icon="&#x1F5A8;" title="Print QR"   desc="Printable labels for all machines" href="/?print" />
           <NavCard icon="&#x1F4CA;" title="Reports"    desc="Export CSV · Print summary" href="/?reports" badge={stats.highWOs} />
+          <NavCard icon="&#x1F4E1;" title="MQTT"       desc="Sensor mapping · Broker config" href="/?mqtt" />
         </div>
 
         {/* ── DB Maintenance ── */}
