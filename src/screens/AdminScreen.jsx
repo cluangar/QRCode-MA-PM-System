@@ -407,7 +407,7 @@ function DBSection() {
               style={{ ...btn('dim'), background: 'rgba(255,71,87,0.15)', border: '1px solid rgba(255,71,87,0.5)', color: R }}
               onClick={doReset} disabled={busy === 'reset'}
             >
-              {busy === 'reset' ? 'Resetting…' : '&#x26A0; Yes, Reset Everything'}
+              {busy === 'reset' ? 'Resetting…' : '⚠ Yes, Reset Everything'}
             </button>
             <button style={btn('dim')} onClick={() => setResetConfirm(false)}>Cancel</button>
           </div>
