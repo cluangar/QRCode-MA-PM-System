@@ -132,7 +132,7 @@ export function AdminScreen() {
         </div>
       </div>
 
-      <div style={{ padding: '20px', maxWidth: '860px' }}>
+      <div style={{ padding: '20px' }}>
 
         {/* ── Stats ── */}
         <div style={{ fontSize: '9px', color: D, fontFamily: MONO, letterSpacing: '.12em', marginBottom: '10px' }}>
