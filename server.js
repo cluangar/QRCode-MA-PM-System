@@ -55,11 +55,16 @@ db.exec(`
     reorder_level  INTEGER DEFAULT 5,
     unit           TEXT DEFAULT 'pcs'
   );
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+  );
 `)
 
-// Seed demo data once
+// Seed demo data only on true first run (never after a reset)
+const alreadySeeded = db.prepare("SELECT value FROM settings WHERE key='demo_seeded'").get()
 const empty = db.prepare('SELECT COUNT(*) as n FROM machines').get().n === 0
-if (config.demoSeed && empty) {
+if (config.demoSeed && empty && !alreadySeeded) {
   db.prepare(`INSERT INTO machines VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
     'MCH-001','CNC Lathe #3','Line B Bay 4','Mazak QT-350','SN-20230841','Fault',4821,5000,6.5,142)
   db.prepare(`INSERT INTO machines VALUES (?,?,?,?,?,?,?,?,?,?)`).run(
@@ -95,6 +100,7 @@ if (config.demoSeed && empty) {
   ]
   const ins = db.prepare('INSERT INTO spare_parts VALUES (?,?,?,?,?,?)')
   parts.forEach(p => ins.run(...p))
+  db.prepare("INSERT OR REPLACE INTO settings VALUES ('demo_seeded', '1')").run()
   console.log('Demo data seeded.')
 }
 
@@ -301,6 +307,7 @@ app.post('/api/db/reset', (_req, res) => {
     DELETE FROM workorders;
     DELETE FROM machines;
   `)
+  db.prepare("INSERT OR REPLACE INTO settings VALUES ('demo_seeded', '1')").run()
   res.json({ ok: true })
 })
 
